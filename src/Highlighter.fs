@@ -93,7 +93,7 @@ module Theme =
         | ColorKind.PreprocessorKeyword -> Brushes.DarkBlue
         | _ -> Brushes.Black
 
-type Highlighter(?theme) =
+type Highlighter() =
     inherit TextBlock(TextWrapping = TextWrapping.NoWrap, FontFamily = FontFamily("Consolas"))
 
     static let sourceTextProp =
@@ -105,21 +105,21 @@ type Highlighter(?theme) =
                 "",
                 fun dobj _ ->
                     match dobj with
-                    | :? Highlighter as h -> h.OnSourceTextChanged()
+                    | :? Highlighter as h -> h.OnSourceChanged()
                     | _ -> ()
             )
         )
 
     let inlines = base.Inlines
 
-    let theme = defaultArg theme Theme.Default
+    let mutable theme = Theme.Default
     
     static member SourceTextProperty = sourceTextProp
     member this.SourceText
         with get (): string = (string (this.GetValue sourceTextProp))
         and set (value: string) = this.SetValue(sourceTextProp, box value)
 
-    member this.OnSourceTextChanged() =
+    member this.OnSourceChanged() =
         inlines.Clear()
         Tokenizer.scanText this.SourceText 
         |> Seq.map(function 
@@ -129,3 +129,9 @@ type Highlighter(?theme) =
                 Documents.LineBreak() :> Documents.Inline
         )
         |> inlines.AddRange
+    
+    member this.Theme
+           with get () = theme
+           and set v = 
+            theme <- v
+            this.OnSourceChanged()
